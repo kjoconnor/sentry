@@ -1232,7 +1232,7 @@ class SearchDocumentManager(BaseManager):
 
         for field, tokens in token_counts.iteritems():
             for token, count in tokens.iteritems():
-                SearchToken.create_or_update(
+                SearchToken.objects.create_or_update(
                     document=document,
                     token=token,
                     field=field,
