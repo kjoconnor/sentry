@@ -63,7 +63,7 @@ def get_checksum_from_event(event):
 
 
 def buffered_update(model, kwargs, values):
-    create_or_update(model, defaults=values, **kwargs)
+    create_or_update(model, values=values, **kwargs)
 
 
 class BaseManager(models.Manager):
@@ -222,14 +222,16 @@ class BaseManager(models.Manager):
         else:
             return self.get(**kwargs)
 
-    def create_or_update(self, defaults, buffer=False, **kwargs):
+    def create_or_update(self, buffer=False, **kwargs):
+        values = kwargs.pop('defaults', kwargs.pop('values', {}))
+
         if not buffer:
-            return create_or_update(self.model, defaults=defaults, **kwargs)
+            return create_or_update(self.model, values=values, **kwargs)
 
         self.app.buffer.delay(
             callback=buffered_update,
             args=[self.model, kwargs],
-            values=defaults,
+            values=values,
         )
 
     @memoize
@@ -751,7 +753,7 @@ class GroupManager(BaseManager, ChartMixin):
                 project=project,
                 key=key,
                 value=value,
-                defaults={
+                values={
                     'times_seen': F('times_seen') + 1,
                     'last_seen': date,
                     'data': data,
@@ -764,7 +766,7 @@ class GroupManager(BaseManager, ChartMixin):
                 project=project,
                 key=key,
                 value=value,
-                defaults={
+                values={
                     'times_seen': F('times_seen') + 1,
                     'last_seen': date,
                 },
@@ -1194,7 +1196,7 @@ class SearchDocumentManager(BaseManager):
         if not created:
             self.create_or_update(
                 id=document.id,
-                defaults={
+                values={
                     'total_events': F('total_events') + 1,
                     'date_changed': group.last_seen,
                     'status': group.status,
@@ -1236,7 +1238,7 @@ class SearchDocumentManager(BaseManager):
                     document=document,
                     token=token,
                     field=field,
-                    defaults={
+                    values={
                         'times_seen': F('times_seen') + count,
                     },
                     buffer=True,
